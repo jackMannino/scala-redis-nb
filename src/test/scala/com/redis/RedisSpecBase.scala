@@ -11,14 +11,15 @@ import org.scalatest.concurrent.{Futures, ScalaFutures}
 import org.scalatest.time._
 
 class RedisSpecBase(_system: ActorSystem) extends TestKit(_system)
-                 with FunSpecLike
-                 with Matchers
-                 with Futures
-                 with ScalaFutures
-                 with BeforeAndAfterEach
-                 with BeforeAndAfterAll {
+  with FunSpecLike
+  with Matchers
+  with Futures
+  with ScalaFutures
+  with BeforeAndAfterEach
+  with BeforeAndAfterAll {
   // Akka setup
-  def this() = this(ActorSystem("redis-test-"+ RedisSpecBase.iter.next))
+  def this() = this(ActorSystem("redis-test-" + RedisSpecBase.iter.next))
+
   implicit val executionContext = system.dispatcher
   implicit val timeout = Timeout(2 seconds)
 
@@ -31,26 +32,26 @@ class RedisSpecBase(_system: ActorSystem) extends TestKit(_system)
   def withReconnectingClient(testCode: RedisClient => Any) = {
     val client = RedisClient("localhost", 6379, settings = RedisClientSettings(reconnectionSettings = ConstantReconnectionSettings(100)))
     testCode(client)
-    client.quit().futureValue should equal (true)
+    client.quit().futureValue should equal(true)
   }
 
   def withFixedConstantReconnectingClient(testCode: RedisClient => Any) = {
-    val client = RedisClient("localhost", 6379, settings = RedisClientSettings(reconnectionSettings = ConstantReconnectionSettings(100,2)))
+    val client = RedisClient("localhost", 6379, settings = RedisClientSettings(reconnectionSettings = ConstantReconnectionSettings(100, 2)))
     testCode(client)
-    client.quit().futureValue should equal (true)
+    client.quit().futureValue should equal(true)
   }
 
   override def beforeEach = {
     client.flushdb()
   }
 
-  override def afterEach = { }
+  override def afterEach = {}
 
   override def afterAll =
     try {
       client.flushdb()
-      client.quit() onSuccess {
-        case true => system.shutdown()
+      client.quit() foreach {
+        case true => system.terminate()
         case false => throw new Exception("client actor didn't stop properly")
       }
     } catch {
